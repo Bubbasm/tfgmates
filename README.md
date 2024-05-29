@@ -1,0 +1,1 @@
+Gracias a otras librerías existentes, se han desarrollado utilidades para la búsqueda de códigos QR mediante fuerza bruta, utilizado en mi TFG titulado "Códigos QR y códigos correctores de Reed-Solomon".
