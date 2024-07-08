@@ -120,9 +120,7 @@ class QrCode:
             raise ValueError("Mask value out of range")
         self._version = version
         self._errcorlvl = errcorlvl
-        self.allcodewords = self._add_ecc_and_interleave(
-            bytearray(
-                datacodewords))
+        self._add_ecc_and_interleave(bytearray(datacodewords))
 
     def get_version(self) -> int:
         """Returns this QR Code's version number, in the range [1, 40]."""
@@ -131,6 +129,10 @@ class QrCode:
     def get_error_correction_level(self) -> QrCode.Ecc:
         """Returns this QR Code's error correction level."""
         return self._errcorlvl
+
+    def get_error_correcting_codeword_count(self) -> int:
+        """Returns the number of 8-bit data (i.e. not error correction) codewords contained in this QR Code."""
+        return QrCode._ECC_CODEWORDS_PER_BLOCK[self._errcorlvl.ordinal][self._version]
 
     def _add_ecc_and_interleave(self, data: bytearray) -> bytes:
         """Returns a new byte string representing the given data with the appropriate error correction
@@ -157,22 +159,9 @@ class QrCode:
                                   (0 if i < numshortblocks else 1)]
             k += len(dat)
             ecc: bytes = QrCode._reed_solomon_compute_remainder(dat, rsdiv)
-            if i < numshortblocks:
-                dat.append(0)
             blocks.append(dat + ecc)
         assert k == len(data)
         self.blocks = blocks.copy()
-
-        # Interleave (not concatenate) the bytes from every block into a single
-        # sequence
-        result = bytearray()
-        for i in range(len(blocks[0])):
-            for (j, blk) in enumerate(blocks):
-                # Skip the padding byte in short blocks
-                if (i != shortblocklen - blockecclen) or (j >= numshortblocks):
-                    result.append(blk[i])
-        assert len(result) == rawcodewords
-        return result
 
     @staticmethod
     def _get_num_raw_data_modules(ver: int) -> int:

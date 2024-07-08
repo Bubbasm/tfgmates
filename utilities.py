@@ -19,7 +19,7 @@ def gen_qr_codes(text: bytes, ecc="L"):
     elif ecc == "H":
         eccQR = QrCode.Ecc.HIGH
     qr = QrCode.encode_binary(text, eccQR)
-    return [bytes(block) for block in qr.blocks]
+    return [bytes(block) for block in qr.blocks], qr
 
 
 def gen_rs_codes(text, eccCount):
@@ -64,17 +64,20 @@ def get_changing_bits_count(text1: bytes, text2: bytes, skip=3):
     return sum(a[:-skip])
 
 
-def get_minimum_byte_change(text1: bytes, index, ecc_codes):
-    skip = ecc_codes // 2
-    text1_int = gen_qr_codes(text1)[0]
+def get_minimum_byte_change(text1: bytes, index, ecc="L"):
+    text1_int, qr = gen_qr_codes(text1,ecc)
+    text1_int = text1_int[0]
+    skip = (qr.get_error_correcting_codeword_count()-1)//2
     text2 = list(text1)
     minimum = 10000000
     for j in range(256):
         if j == text1[index]:
             continue
         text2[index] = j
-        text2_int = gen_qr_codes(bytes(text2))[0]
+        text2_int = gen_qr_codes(bytes(text2),ecc)[0][0]
         aux = get_changing_bits_count(text1_int, text2_int, skip)
+        if aux == 0:
+            return (-1, -1, -1)
         if aux < minimum:
             minimum = aux
             position = index
@@ -82,7 +85,7 @@ def get_minimum_byte_change(text1: bytes, index, ecc_codes):
     return (minimum, position, value)
 
 
-def get_minimum_byte_change_raw(text1: bytes, index, ecc_codes):
+def get_minimum_byte_change_raw(text1: bytes, index, ecc_codes=7):
     text1_int = text1 + gen_rs_codes(text1, ecc_codes)
     text2 = list(text1)
     minimum = 10000000
@@ -103,6 +106,8 @@ def _brute_force_helper(text1: bytes, minimum_byte_change_function, ecc_codes):
     minim = []
     for i in range(len(text1)):
         (minimum, position, value) = minimum_byte_change_function(text1, i, ecc_codes)
+        if minimum == -1:
+            break
         print((minimum, position, value))
         minim.append((minimum, position, value))
     minim.sort()
@@ -112,12 +117,12 @@ def _brute_force_helper(text1: bytes, minimum_byte_change_function, ecc_codes):
     return minim
 
 
-def brute_force_change_text(text1: bytes, ecc_codes=7):
+def brute_force_change_text(text1: bytes, ecc="L"):
     """
     Brute force the text to get another text
     with the minimum number of changing bits
     """
-    return _brute_force_helper(text1, get_minimum_byte_change, ecc_codes)
+    return _brute_force_helper(text1, get_minimum_byte_change, ecc)
 
 
 def brute_force_change_raw(text1: bytes, ecc_codes=7):
