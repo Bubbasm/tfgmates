@@ -67,7 +67,7 @@ def get_changing_bits_count(text1: bytes, text2: bytes, skip=3):
 def get_minimum_byte_change(text1: bytes, index, ecc="L"):
     text1_int, qr = gen_qr_codes(text1,ecc)
     text1_int = text1_int[0]
-    skip = (qr.get_error_correcting_codeword_count()-1)//2
+    skip = (qr.get_error_correcting_codeword_count())//2
     text2 = list(text1)
     minimum = 10000000
     for j in range(256):
